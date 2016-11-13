@@ -13,6 +13,7 @@ public class CAHGame {
     private Map playedCards;
     private Map players;
     private int played;
+    private int czar;
     private CAHDao dao;
     private static Lock lock;
     private static Condition hasPlayed;
@@ -21,14 +22,15 @@ public class CAHGame {
     
     public CAHGame(){
         dao = new CAHDao();
-        playedCards = new HashMap<Integer, WhiteCard>();
-        players = new HashMap<String, Player>();
+        playedCards = new HashMap<WhiteCard, Integer>();
+        players = new HashMap<Integer, Player>();
         whiteDeck = dao.getWhiteDeck();
         blackDeck = dao.getBlackDeck();
         lock = new ReentrantLock();
         hasPlayed = lock.newCondition();
         isOver = lock.newCondition();
         played = 0;
+        czar = 0;
     }
     
     public CAHGame(HashMap<String, Player> map){
@@ -63,12 +65,12 @@ public class CAHGame {
         return currentBlackCard;
     }
     
-    public void playCard(int playerNo, WhiteCard card){
+    public void playCard(WhiteCard card, int playerNo){
         lock.lock();
         hasPlayed.signalAll();
         lock.unlock();
         ++ played;
-        playedCards.put(playerNo, card);
+        playedCards.put(card, playerNo);
     }
     
     public void waitForReview(){
@@ -89,12 +91,24 @@ public class CAHGame {
         return playedCards;
     }
     
-    public void addPlayer(String handle, Player player){
-        players.put(handle, player);
+    public void addPlayer(int number, Player player){
+        players.put(number, player);
     }
     
-    public Player getPlayer(String handle){
-        return (Player) players.get(handle);
+    public Player getPlayer(int id){
+        return (Player) players.get(id);
+    }
+    
+    public int getPlayersSize(){
+        return players.size();
+    }
+    
+    public void setCzar(int a){
+        czar = a;
+    }
+    
+    public int getCzar(){
+        return czar;
     }
     
     public CAHDao getDAO(){

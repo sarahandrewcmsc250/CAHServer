@@ -113,19 +113,21 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                         break;
                     case(PLAY_WHITE):
                         WhiteCard card = new WhiteCard(inputFromClient.readLine());
-                        game.playCard(player.getID(), card);
+                        game.playCard(card, player.getID());
                         outputToClient.println(player.getID());
                         outputToClient.flush();
                         break;
                     case(PICK_WHITE):
-                        player.addPoint();
-                        if (player.getPoints() == 5){
+                        String winner = inputFromClient.readLine();
+                        int win = (int) (game.getPlayedCards().get(winner));
+                        game.getPlayer(win).addPoint();
+                        if (game.getPlayer(win).getPoints() == 5){
                             game.signalGameOver();
                         }
                         break;
                     case(GET_HAND):
-                        int total = game.getPlayer(player.getHandle()).getHand().size();
-                        ArrayList hand = game.getPlayer(player.getHandle()).getHand();
+                        int total = game.getPlayer(player.getID()).getHand().size();
+                        ArrayList hand = game.getPlayer(player.getID()).getHand();
                         outputToClient.println(total);
                         for(int i = 0; i < total; ++ i){
                             outputToClient.println(hand.get(i).toString());
@@ -148,6 +150,8 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                         int lobbyNum = Integer.parseInt(inputFromClient.readLine());
                         lobby = (Lobby) lobbies.get(lobbyNum);
                         lobby.addPlayer(player);
+                        outputToClient.println(lobby.getPlayers().size() - 1);
+                        outputToClient.flush();
                         break;
                     case(SEND_HANDLE):
                         String handle = inputFromClient.readLine();
@@ -157,14 +161,31 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                         outputToClient.flush();
                         break;
                     case(READY_UP):
+                        int czar;
                         lobby.readyUp();
                         new Thread(()->{
                             lobby.waitForReady();
-                            game.addPlayer(player.getHandle(), player);
+                            game.addPlayer(player.getID(), player);
                         }).start();
+                        //draw 10 cards here for everyone
+                        czar = lobby.getCzar();
+                        game.setCzar(czar);
+                        outputToClient.println(czar);
+                        outputToClient.flush();
                         break;
                     case(UNREADY):
                         lobby.removeReady();
+                        break;
+                    case(GET_CZAR):
+                        int size = game.getCzar();
+                        if (size + 1 == game.getPlayersSize()){
+                            size = 0;
+                        }else{
+                            ++ size;
+                        }  
+                        game.setCzar(size);
+                        outputToClient.println(size);
+                        outputToClient.flush();
                         break;
                 }
             }

@@ -6,15 +6,17 @@ public class Player {
     private int id;
     private String handle;
     private ArrayList<WhiteCard> hand;
+    private int points;
 
     public Player(){
-        
+        points = 0;
     }
     
-    public Player(int ident, String hand, ArrayList<WhiteCard> hnd){
-        id = ident;
-        handle = hand;
-        this.hand = hnd;
+    public Player(int id, String handle, ArrayList<WhiteCard> hand){
+        this.id = id;
+        this.handle = handle;
+        this.hand = hand;
+        this.points = 0;
     }
     
     public void setID(int ident){
@@ -56,5 +58,13 @@ public class Player {
             }
             ++ index;
         }
+    }
+    
+    public void addPoint(){
+        ++ points;
+    }
+    
+    public int getPoints(){
+        return points;
     }
 }

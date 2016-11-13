@@ -8,6 +8,7 @@ import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -71,6 +72,7 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
         this.lobbies = lobbies;
         this.playerNo = playerNo;
         rng = new Random();
+        this.game = new CAHGame();
     }
     
     public void run(){
@@ -88,17 +90,51 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                     case(DRAW_WHITE):
                         int draws = Integer.parseInt(inputFromClient.readLine());
                         for(int i = 1; i <= draws; ++ i){
+                            if (game.getWhiteDeck().isEmpty()){
+                                game.setWhiteDeck(game.getDAO().getWhiteDeck());
+                            }
                             int temp = rng.nextInt(game.getWhiteDeck().size());
                             WhiteCard card = game.getWhiteDeck().get(temp);
+                            game.getWhiteDeck().remove(card);
                             player.addToHand(card);
                         }
                         break;
+                    case(DRAW_BLACK):
+                        int temp = rng.nextInt(game.getBlackDeck().size());
+                        BlackCard bCard = game.getBlackDeck().get(temp);
+                        game.getBlackDeck().remove(bCard);
+                        game.setCurrentBlackCard(bCard);
+                        outputToClient.println(bCard.getText());
+                        outputToClient.flush();
+                        break;
+                    case(GET_BLACK):
+                        outputToClient.println(game.getCurrentBlackCard().getText());
+                        outputToClient.flush();
+                        break;
                     case(PLAY_WHITE):
+                        WhiteCard card = new WhiteCard(inputFromClient.readLine());
+                        game.playCard(player.getID(), card);
+                        outputToClient.println(player.getID());
+                        outputToClient.flush();
                         break;
                     case(PICK_WHITE):
-                        int num = Integer.parseInt(inputFromClient.readLine());
-                        WhiteCard card = new WhiteCard(inputFromClient.readLine());
-                        game.playCard(num, card);
+                        player.addPoint();
+                        if (player.getPoints() == 5){
+                            game.signalGameOver();
+                        }
+                        break;
+                    case(GET_HAND):
+                        int total = game.getPlayer(player.getHandle()).getHand().size();
+                        ArrayList hand = game.getPlayer(player.getHandle()).getHand();
+                        outputToClient.println(total);
+                        for(int i = 0; i < total; ++ i){
+                            outputToClient.println(hand.get(i).toString());
+                        }
+                        outputToClient.flush();
+                        break;
+                    case(GET_SCORE):
+                        outputToClient.println(player.getPoints());
+                        outputToClient.flush();
                         break;
                     case(GET_LOBBIES):
                         outputToClient.println("1");
@@ -116,9 +152,19 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                     case(SEND_HANDLE):
                         String handle = inputFromClient.readLine();
                         player.setHandle(handle);
+                        player.setID(playerNo);
+                        outputToClient.println(playerNo);
+                        outputToClient.flush();
                         break;
                     case(READY_UP):
-                        
+                        lobby.readyUp();
+                        new Thread(()->{
+                            lobby.waitForReady();
+                            game.addPlayer(player.getHandle(), player);
+                        }).start();
+                        break;
+                    case(UNREADY):
+                        lobby.removeReady();
                         break;
                 }
             }

@@ -19,7 +19,7 @@ public class BlackCard {
         this.text = text;
     }
     
-    public String getTest(){
+    public String getText(){
         return text;
     }
     

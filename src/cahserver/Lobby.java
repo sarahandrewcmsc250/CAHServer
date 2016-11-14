@@ -39,7 +39,7 @@ public class Lobby {
     
     public void readyUp(){
         ++ playersReady;
-        if (playersReady == players.size()){
+        if (playersReady == players.size() && playersReady >= 3){
             lock.lock();
             isReady.signalAll();
             lock.unlock();
@@ -51,15 +51,13 @@ public class Lobby {
     }
     
     public void waitForReady(){
-        if (players.size() >= 3){
-            lock.lock();
-            try{
-                isReady.await();
-            }catch(InterruptedException e){
-                e.printStackTrace();
-            }finally{
-                lock.unlock();
-            }
+        lock.lock();
+        try{
+            isReady.await();
+        }catch(InterruptedException e){
+            e.printStackTrace();
+        }finally{
+            lock.unlock();
         }
     }
     

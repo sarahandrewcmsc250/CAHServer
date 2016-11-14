@@ -56,27 +56,29 @@ public class CAHGame {
     }
     
     public void playCard(String card, int playerNo){
-        lock.lock();
-        hasPlayed.signalAll();
-        lock.unlock();
         ++ played;
         playedCards.put(card, playerNo);
+        if(played == players.size() - 1){
+            lock.lock();
+            hasPlayed.signalAll();
+            lock.unlock();
+        }                
     }
     
     public void waitForReview(){
          if (players.size() == played){
             lock.lock();
             try{
-                hasPlayed.await();
+                hasPlayed.await();            
             }catch(InterruptedException e){
                 e.printStackTrace();
-            }finally{
+            }finally{                
                 lock.unlock();
-                played = 0;
             }
+            played = 0;
         }
     }
-    
+       
     public Map getPlayedCards(){
         return playedCards;
     }

@@ -11,18 +11,20 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
 import java.util.ResourceBundle;
+import java.util.Set;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 
 public class FXMLDocumentController implements Initializable {
-    private int playerNo = 0;
     @FXML
     private TextArea txaServerText;
     private Map lobbies;
+    private int playerNo = 0;
         
     @Override
     public void initialize(URL url, ResourceBundle rb) {
@@ -64,6 +66,7 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
     private Map lobbies;
     private Lobby lobby;
     int playerNo;
+    int gameState;
     Random rng;
     
     public HandleAPlayer(Socket socket, TextArea area, Map lobbies, int playerNo){
@@ -71,8 +74,9 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
         this.textArea = area;
         this.lobbies = lobbies;
         this.playerNo = playerNo;
-        rng = new Random();
+        this.rng = new Random();
         this.game = new CAHGame();
+        this.gameState = 1;
     }
     
     public void run(){
@@ -109,10 +113,12 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                         break;
                     case(GET_BLACK):
                         outputToClient.println(game.getCurrentBlackCard().getText());
+                        //outputToClient.println(game.getCurrentBlackCard().getDraw());
+                        //outputToClient.println(game.getCurrentBlackCard().getPlay());
                         outputToClient.flush();
                         break;
                     case(PLAY_WHITE):
-                        WhiteCard card = new WhiteCard(inputFromClient.readLine());
+                        String card = inputFromClient.readLine();
                         game.playCard(card, player.getID());
                         outputToClient.println(player.getID());
                         outputToClient.flush();
@@ -122,7 +128,7 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                         int win = (int) (game.getPlayedCards().get(winner));
                         game.getPlayer(win).addPoint();
                         if (game.getPlayer(win).getPoints() == 5){
-                            game.signalGameOver();
+                            gameState = 0;
                         }
                         break;
                     case(GET_HAND):
@@ -138,12 +144,25 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                         outputToClient.println(player.getPoints());
                         outputToClient.flush();
                         break;
+                    case(GET_ALL_SCORES):
+                        outputToClient.println(gameState);
+                        Map map = game.getPlayers();
+                        Set set = map.keySet();
+                        Iterator iter = set.iterator();
+                        while(iter.hasNext()){
+                            int id = (int) iter.next();
+                            Player user = (Player) map.get(id);
+                            outputToClient.println(user.getHandle());
+                            outputToClient.println(user.getPoints());
+                        }
+                        outputToClient.flush();
+                        break;
                     case(GET_LOBBIES):
-                        outputToClient.println("1");
-                        outputToClient.println("2");
-                        outputToClient.println("3");
-                        outputToClient.println("4");
-                        outputToClient.println("5");
+                        int count = 5;
+                        outputToClient.println(count);
+                        for(int i = 1; i <= count; ++ i){
+                            outputToClient.println(i);
+                        }
                         outputToClient.flush();
                         break;
                     case(SEND_LOBBY):
@@ -167,7 +186,15 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                             lobby.waitForReady();
                             game.addPlayer(player.getID(), player);
                         }).start();
-                        //draw 10 cards here for everyone
+                        for(int i = 1; i <= 10; ++ i){
+                            if (game.getWhiteDeck().isEmpty()){
+                                game.setWhiteDeck(game.getDAO().getWhiteDeck());
+                            }
+                            int a = rng.nextInt(game.getWhiteDeck().size());
+                            WhiteCard crd = game.getWhiteDeck().get(a);
+                            game.getWhiteDeck().remove(crd);
+                            player.addToHand(crd);
+                        }
                         czar = lobby.getCzar();
                         game.setCzar(czar);
                         outputToClient.println(czar);

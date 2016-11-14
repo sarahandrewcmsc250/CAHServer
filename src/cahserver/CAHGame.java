@@ -17,28 +17,18 @@ public class CAHGame {
     private CAHDao dao;
     private static Lock lock;
     private static Condition hasPlayed;
-    private static Condition isOver;
     private BlackCard currentBlackCard;
     
     public CAHGame(){
         dao = new CAHDao();
-        playedCards = new HashMap<WhiteCard, Integer>();
+        playedCards = new HashMap<String, Integer>();
         players = new HashMap<Integer, Player>();
         whiteDeck = dao.getWhiteDeck();
         blackDeck = dao.getBlackDeck();
         lock = new ReentrantLock();
         hasPlayed = lock.newCondition();
-        isOver = lock.newCondition();
         played = 0;
         czar = 0;
-    }
-    
-    public CAHGame(HashMap<String, Player> map){
-        dao = new CAHDao();
-        playedCards = new HashMap<Integer, WhiteCard>();
-        players = map;
-        whiteDeck = dao.getWhiteDeck();
-        blackDeck = dao.getBlackDeck();
     }
     
     public ArrayList<WhiteCard> getWhiteDeck(){
@@ -65,7 +55,7 @@ public class CAHGame {
         return currentBlackCard;
     }
     
-    public void playCard(WhiteCard card, int playerNo){
+    public void playCard(String card, int playerNo){
         lock.lock();
         hasPlayed.signalAll();
         lock.unlock();
@@ -103,6 +93,10 @@ public class CAHGame {
         return players.size();
     }
     
+    public Map getPlayers(){
+        return players;
+    }
+    
     public void setCzar(int a){
         czar = a;
     }
@@ -113,11 +107,5 @@ public class CAHGame {
     
     public CAHDao getDAO(){
         return dao;
-    }
-    
-    public void signalGameOver(){
-        lock.lock();
-        isOver.signalAll();
-        lock.unlock();
     }
 }

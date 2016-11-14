@@ -33,7 +33,7 @@ public class FXMLDocumentController implements Initializable {
         new Thread( () -> {
             try {
                 // Create a server socket
-                ServerSocket serverSocket = new ServerSocket(80);
+                ServerSocket serverSocket = new ServerSocket(8000);
 
                 while (true) {
                     // Listen for a new connection request
@@ -44,7 +44,7 @@ public class FXMLDocumentController implements Initializable {
 
                     Platform.runLater( () -> {
                     // Display the player number
-                    txaServerText.appendText("Starting thread for client " + playerNo + " at " + new Date() + '\n');
+                    txaServerText.append("Starting thread for client " + playerNo + " at " + new Date() + '\n');
                     });
 
                     // Create and start a new thread for the connection
@@ -102,6 +102,9 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                             game.getWhiteDeck().remove(card);
                             player.addToHand(card);
                         }
+                        Platform.runLater( () -> {
+                            textArea.append("Client " + playerNo + " drew " + draws + " cards" + '\n');
+                        });
                         break;
                     case(DRAW_BLACK):
                         int temp = rng.nextInt(game.getBlackDeck().size());
@@ -110,11 +113,12 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                         game.setCurrentBlackCard(bCard);
                         outputToClient.println(bCard.getText());
                         outputToClient.flush();
+                        Platform.runLater( () -> {
+                            textArea.append("New black card drawn" + '\n');
+                        });
                         break;
                     case(GET_BLACK):
                         outputToClient.println(game.getCurrentBlackCard().getText());
-                        //outputToClient.println(game.getCurrentBlackCard().getDraw());
-                        //outputToClient.println(game.getCurrentBlackCard().getPlay());
                         outputToClient.flush();
                         break;
                     case(PLAY_WHITE):
@@ -156,6 +160,7 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                             outputToClient.println(user.getPoints());
                         }
                         outputToClient.flush();
+                        game.clearPlayedCards();
                         break;
                     case(GET_LOBBIES):
                         int count = 5;
@@ -169,8 +174,7 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                         int lobbyNum = Integer.parseInt(inputFromClient.readLine());
                         lobby = (Lobby) lobbies.get(lobbyNum);
                         lobby.addPlayer(player);
-                        outputToClient.println(lobby.getPlayers().size() - 1);
-                        outputToClient.flush();
+                        lobby.addPlayerID(playerNo);
                         break;
                     case(SEND_HANDLE):
                         String handle = inputFromClient.readLine();
@@ -197,7 +201,7 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                         }
                         czar = lobby.getCzar();
                         game.setCzar(czar);
-                        outputToClient.println(czar);
+                        outputToClient.println(lobby.getPlayerIds().get(czar));
                         outputToClient.flush();
                         break;
                     case(UNREADY):
@@ -211,7 +215,18 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                             ++ size;
                         }  
                         game.setCzar(size);
-                        outputToClient.println(size);
+                        outputToClient.println(lobby.getPlayerIds().get(size));
+                        outputToClient.flush();
+                        break;
+                    case(GET_TO_JUDGE):
+                        int length = game.getPlayedCards().size();
+                        outputToClient.println(length);
+                        Map toJudge = game.getPlayedCards();
+                        Set keys = toJudge.keySet();
+                        Iterator i = keys.iterator();
+                        while(i.hasNext()){
+                            outputToClient.println(i.next().toString());
+                        }
                         outputToClient.flush();
                         break;
                 }

@@ -43,7 +43,7 @@ public class CAHDao {
         BlackCard card = new BlackCard();
         try{
             Statement statement = connection.createStatement();
-            ResultSet set = statement.executeQuery("SELECT * FROM cah.black_cards");
+            ResultSet set = statement.executeQuery("SELECT * FROM cah.black_cards WHERE black_cards.pick = 1");
             while (set.next()){
                 card.setText(set.getString(2));
                 card.setDraw(set.getInt(3));

@@ -15,4 +15,5 @@ public interface CAHConstants {
     public static int DRAW_BLACK = 10;
     public static int GET_BLACK = 12;
     public static int GET_CZAR = 13;
+    public static int GET_TO_JUDGE = 15;
 }

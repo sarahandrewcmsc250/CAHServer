@@ -1,5 +1,6 @@
 package cahserver;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -10,7 +11,8 @@ import java.util.concurrent.locks.ReentrantLock;
 public class Lobby {
     private int id;
     private int czar;
-    private Map players;
+    private Map<Integer, Player> players;
+    private ArrayList<Integer> playerIds;
     private int playersReady;
     private static Lock lock;
     private static Condition isReady;
@@ -18,12 +20,13 @@ public class Lobby {
     
     public Lobby(int ident){
         id = ident;
-        players = new HashMap<Integer, Player>();
+        players = new HashMap<>();
+        playerIds = new ArrayList<>();
         playersReady = 0;
         lock = new ReentrantLock();
         isReady = lock.newCondition();
-        czar = 0;
         rng = new Random();
+        czar = 0;
     }
     
     public void setID(int ident){
@@ -38,7 +41,6 @@ public class Lobby {
         ++ playersReady;
         if (playersReady == players.size()){
             lock.lock();
-            czar = rng.nextInt(players.size());
             isReady.signalAll();
             lock.unlock();
         }
@@ -64,15 +66,29 @@ public class Lobby {
     public void addPlayer(Player player){
         int id = player.getID();
         players.put(id, player);
+        czar = rng.nextInt(players.size());
     }
     
     public void removePlayer(Player player){
         int id = player.getID();
         players.remove(id);
+        czar = rng.nextInt(players.size());
     }
     
     public Map getPlayers(){
         return players;
+    }
+    
+    public void addPlayerID(int id){
+        playerIds.add(id);
+    }
+    
+    public void removePlayerID(int id){
+        playerIds.remove(id);
+    }
+    
+    public ArrayList getPlayerIds(){
+        return playerIds;
     }
     
     public int getCzar(){

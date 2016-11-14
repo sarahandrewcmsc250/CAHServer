@@ -81,6 +81,10 @@ public class CAHGame {
         return playedCards;
     }
     
+    public void clearPlayedCards(){
+        playedCards = null;
+    }
+    
     public void addPlayer(int number, Player player){
         players.put(number, player);
     }

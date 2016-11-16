@@ -1,6 +1,5 @@
 package cahserver;
 
-import java.awt.TextArea;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -19,6 +18,7 @@ import java.util.Set;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.TextArea;
 
 public class FXMLDocumentController implements Initializable {
     @FXML
@@ -44,7 +44,7 @@ public class FXMLDocumentController implements Initializable {
 
                     Platform.runLater( () -> {
                     // Display the player number
-                    txaServerText.append("Starting thread for client " + playerNo + " at " + new Date() + '\n');
+                    txaServerText.appendText("Starting thread for client " + playerNo + " at " + new Date() + '\n');
                     });
 
                     // Create and start a new thread for the connection
@@ -103,7 +103,7 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                             player.addToHand(card);
                         }
                         Platform.runLater( () -> {
-                            textArea.append("Client " + playerNo + " drew " + draws + " cards" + '\n');
+                            textArea.appendText("Client " + playerNo + " drew " + draws + " cards" + '\n');
                         });
                         break;
                     case(DRAW_BLACK):
@@ -114,14 +114,14 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                         outputToClient.println(bCard.getText());
                         outputToClient.flush();
                         Platform.runLater( () -> {
-                            textArea.append("New black card drawn" + '\n');
+                            textArea.appendText("New black card drawn" + '\n');
                         });
                         break;
                     case(GET_BLACK):
                         outputToClient.println(game.getCurrentBlackCard().getText());
                         outputToClient.flush();                        
                         Platform.runLater( () -> {
-                            textArea.append("Current black card's information reported" + '\n');
+                            textArea.appendText("Current black card's information reported" + '\n');
                         });
                         break;
                     case(PLAY_WHITE):
@@ -131,7 +131,7 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                             game.waitForReview();
                         }).start();
                         Platform.runLater( () -> {
-                            textArea.append("Client " + playerNo + " has played a white card" + '\n');
+                            textArea.appendText("Client " + playerNo + " has played a white card" + '\n');
                         });
                         break;
                     case(PICK_WHITE):
@@ -142,7 +142,7 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                             gameState = 0;
                         }
                         Platform.runLater( () -> {
-                            textArea.append("The card czar " + playerNo + " has picked a white card" + '\n');
+                            textArea.appendText("The card czar " + playerNo + " has picked a white card" + '\n');
                         });
                         break;
                     case(GET_HAND):
@@ -154,14 +154,14 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                         }
                         outputToClient.flush();
                         Platform.runLater( () -> {
-                            textArea.append("Client " + playerNo + " has requested the info of the cards in thier hand" + '\n');
+                            textArea.appendText("Client " + playerNo + " has requested the info of the cards in thier hand" + '\n');
                         });
                         break;
                     case(GET_SCORE):
                         outputToClient.println(player.getPoints());
                         outputToClient.flush();
                         Platform.runLater( () -> {
-                            textArea.append("Client " + playerNo + " has requested thier score" + '\n');
+                            textArea.appendText("Client " + playerNo + " has requested thier score" + '\n');
                         });
                         break;
                     case(GET_ALL_SCORES):
@@ -178,8 +178,8 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                         outputToClient.flush();
                         game.clearPlayedCards();
                         Platform.runLater( () -> {
-                            textArea.append("Client " + playerNo + " has requested everyone's score" + '\n');
-                            textArea.append("The list of played cards has been cleared" + '\n');
+                            textArea.appendText("Client " + playerNo + " has requested everyone's score" + '\n');
+                            textArea.appendText("The list of played cards has been cleared" + '\n');
                         });
                         break;
                     case(GET_LOBBIES):
@@ -190,7 +190,7 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                         }
                         outputToClient.flush();
                         Platform.runLater( () -> {
-                            textArea.append("Client " + playerNo + " has asked for the list of lobbies" + '\n');
+                            textArea.appendText("Client " + playerNo + " has asked for the list of lobbies" + '\n');
                         });
                         break;
                     case(SEND_LOBBY):
@@ -199,7 +199,7 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                         lobby.addPlayer(player);
                         lobby.addPlayerID(playerNo);
                         Platform.runLater( () -> {
-                            textArea.append("Client " + playerNo + " has sent thier lobby choice" + '\n');
+                            textArea.appendText("Client " + playerNo + " has sent thier lobby choice" + '\n');
                         });
                         break;
                     case(SEND_HANDLE):
@@ -209,14 +209,14 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                         outputToClient.println(playerNo);
                         outputToClient.flush();
                         Platform.runLater( () -> {
-                            textArea.append("Client " + playerNo + " has sent thier handle" + '\n');
+                            textArea.appendText("Client " + playerNo + " has sent thier handle" + '\n');
                         });
                         break;
                     case(READY_UP):
                         int czar;
                         lobby.readyUp();
                         Platform.runLater( () -> {
-                            textArea.append("Client " + playerNo + " has readied up" + '\n');
+                            textArea.appendText("Client " + playerNo + " has readied up" + '\n');
                         });
                         new Thread(()->{
                             lobby.waitForReady();
@@ -236,14 +236,14 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                         outputToClient.println(lobby.getPlayerIds().get(czar));
                         outputToClient.flush();
                         Platform.runLater( () -> {
-                            textArea.append("Starting hands have been drawn" + '\n');
-                            textArea.append("The first card czar has been chosen" + '\n');
+                            textArea.appendText("Starting hands have been drawn" + '\n');
+                            textArea.appendText("The first card czar has been chosen" + '\n');
                         });
                         break;
                     case(UNREADY):
                         lobby.removeReady();
                         Platform.runLater( () -> {
-                            textArea.append("Client " + playerNo + " has removed thier ready" + '\n');
+                            textArea.appendText("Client " + playerNo + " has removed thier ready" + '\n');
                         });
                         break;
                     case(GET_CZAR):
@@ -258,7 +258,7 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                         outputToClient.println(newCzar);
                         outputToClient.flush();
                         Platform.runLater( () -> {
-                            textArea.append("Client " + newCzar + " will be the new card czar" + '\n');
+                            textArea.appendText("Client " + newCzar + " will be the new card czar" + '\n');
                         });
                         break;
                     case(GET_TO_JUDGE):
@@ -272,7 +272,7 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                         }
                         outputToClient.flush();
                         Platform.runLater( () -> {
-                            textArea.append("Client " + playerNo + " has requested the list of played cards" + '\n');
+                            textArea.appendText("Client " + playerNo + " has requested the list of played cards" + '\n');
                         });
                         break;
                 }

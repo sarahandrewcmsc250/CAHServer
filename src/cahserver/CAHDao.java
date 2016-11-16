@@ -27,7 +27,7 @@ public class CAHDao {
         WhiteCard card = new WhiteCard();
         try{
             Statement statement = connection.createStatement();
-            ResultSet set = statement.executeQuery("SELECT * FROM cah.white_cards");
+            ResultSet set = statement.executeQuery("SELECT * FROM cah.white_cards WHERE white_cards.card_set_id = 1");
             while (set.next()){
                 card.setText(set.getString(2));
                 deck.add(card);

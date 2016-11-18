@@ -17,6 +17,7 @@ public class Lobby {
     private static Lock lock;
     private static Condition isReady;
     private Random rng;
+    private CAHGame game;
     
     public Lobby(int ident){
         id = ident;
@@ -27,6 +28,7 @@ public class Lobby {
         isReady = lock.newCondition();
         rng = new Random();
         czar = 0;
+        game = new CAHGame();
     }
     
     public void setID(int ident){
@@ -39,9 +41,13 @@ public class Lobby {
     
     public void readyUp(){
         ++ playersReady;
-        if (playersReady == players.size() && playersReady >= 3){
+        if ((playersReady == players.size()) && (playersReady >= 3)){
             lock.lock();
             isReady.signalAll();
+            int temp = rng.nextInt(game.getBlackDeck().size());
+            BlackCard bCard = game.getBlackDeck().get(temp);
+            game.getBlackDeck().remove(bCard);
+            game.setCurrentBlackCard(bCard);
             lock.unlock();
         }
     }
@@ -61,20 +67,30 @@ public class Lobby {
         }
     }
     
+    public int getPlayersReady(){
+        return playersReady;
+    }
+    
     public void addPlayer(Player player){
         int id = player.getID();
         players.put(id, player);
-        czar = rng.nextInt(players.size());
+        czar = rng.nextInt(players.size()) + 1;
+        game.setCzar(czar);
     }
     
     public void removePlayer(Player player){
         int id = player.getID();
         players.remove(id);
-        czar = rng.nextInt(players.size());
+        czar = rng.nextInt(players.size()) + 1;
+        game.setCzar(czar);
     }
     
     public Map getPlayers(){
         return players;
+    }
+    
+    public Player getPlayer(int id){
+        return players.get(id);
     }
     
     public void addPlayerID(int id){
@@ -91,5 +107,13 @@ public class Lobby {
     
     public int getCzar(){
         return czar;
+    }
+    
+    public CAHGame getGame(){
+        return game;
+    }
+    
+    public void addToGame(int number, Player player){
+        game.addPlayer(number, player);
     }
 }

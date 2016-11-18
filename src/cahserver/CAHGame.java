@@ -17,6 +17,7 @@ public class CAHGame {
     private CAHDao dao;
     private static Lock lock;
     private static Condition hasPlayed;
+    private static Condition hasChosen;
     private BlackCard currentBlackCard;
     
     public CAHGame(){
@@ -27,6 +28,7 @@ public class CAHGame {
         blackDeck = dao.getBlackDeck();
         lock = new ReentrantLock();
         hasPlayed = lock.newCondition();
+        hasChosen = lock.newCondition();
         played = 0;
         czar = 0;
     }
@@ -39,12 +41,20 @@ public class CAHGame {
         whiteDeck = deck;
     }
     
+    public WhiteCard getWhiteCard(int index){
+        return whiteDeck.get(index);
+    }
+    
     public ArrayList<BlackCard> getBlackDeck(){
         return blackDeck;
     }
     
     public void setBlackDeck(ArrayList deck){
         blackDeck = deck;
+    }
+    
+    public BlackCard getBlackCard(int index){
+        return blackDeck.get(index);
     }
     
     public void setCurrentBlackCard(BlackCard card){
@@ -66,16 +76,33 @@ public class CAHGame {
     }
     
     public void waitForReview(){
-         if (players.size() == played){
-            lock.lock();
-            try{
-                hasPlayed.await();            
-            }catch(InterruptedException e){
-                e.printStackTrace();
-            }finally{                
-                lock.unlock();
-            }
+        System.out.println(players.size());
+        lock.lock();
+        try{
+            hasPlayed.await();            
+        }catch(InterruptedException e){
+            e.printStackTrace();
+        }finally{                
+            lock.unlock();                
             played = 0;
+        }
+    }
+    
+    public void choose(){
+        lock.lock();
+        hasChosen.signal();
+        lock.unlock();
+    }
+    
+    public void waitForChoice(){
+        lock.lock();
+        try{
+            hasChosen.await();
+            System.out.println("waiting for choice");
+        }catch(InterruptedException e){
+            e.printStackTrace();
+        }finally{
+            lock.unlock();
         }
     }
        

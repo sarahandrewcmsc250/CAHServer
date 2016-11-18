@@ -5,14 +5,15 @@ import java.util.ArrayList;
 public class Player {
     private int id;
     private String handle;
-    private ArrayList<WhiteCard> hand;
+    private ArrayList<String> hand;
     private int points;
 
     public Player(){
         points = 0;
+        this.hand = new ArrayList<>();
     }
     
-    public Player(int id, String handle, ArrayList<WhiteCard> hand){
+    public Player(int id, String handle, ArrayList<String> hand){
         this.id = id;
         this.handle = handle;
         this.hand = hand;
@@ -35,15 +36,15 @@ public class Player {
         return handle;
     }
     
-    public void setHand(ArrayList<WhiteCard> hand){
+    public void setHand(ArrayList<String> hand){
         this.hand = hand;
     }
     
-    public ArrayList<WhiteCard> getHand(){
+    public ArrayList<String> getHand(){
         return hand;
     }
     
-    public void addToHand(WhiteCard card){
+    public void addToHand(String card){
         hand.add(card);
     }
     
@@ -52,7 +53,7 @@ public class Player {
         boolean found = false;
         int index = 0;
         while (found == false){
-            if(card.getText().equals(hand.get(index).getText())){
+            if(card.getText().equals(hand.get(index))){
                 hand.remove(index);
                 found = true;
             }

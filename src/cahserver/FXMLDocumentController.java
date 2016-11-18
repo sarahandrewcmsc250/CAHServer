@@ -9,7 +9,6 @@ import java.net.Socket;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
@@ -23,24 +22,22 @@ import javafx.scene.control.TextArea;
 public class FXMLDocumentController implements Initializable {
     @FXML
     private TextArea txaServerText;
-    private Map lobbies;
     private int playerNo = 0;
         
     @Override
-    public void initialize(URL url, ResourceBundle rb) {
-        lobbies = new HashMap<Integer, Lobby>();
-        
+    public void initialize(URL url, ResourceBundle rb) {        
         new Thread( () -> {
             try {
                 // Create a server socket
                 ServerSocket serverSocket = new ServerSocket(8000);
 
                 while (true) {
+                    System.out.println("Waiting for client.");
                     // Listen for a new connection request
                     Socket socket = serverSocket.accept();
 
                     // Increment clientNo
-                    playerNo++;
+                    ++ playerNo;
 
                     Platform.runLater( () -> {
                     // Display the player number
@@ -48,8 +45,7 @@ public class FXMLDocumentController implements Initializable {
                     });
 
                     // Create and start a new thread for the connection
-                    ++ playerNo;
-                    new Thread(new HandleAPlayer(socket, txaServerText, lobbies, playerNo)).start();
+                    new Thread(new HandleAPlayer(socket, txaServerText, playerNo)).start();
                 }
             }catch(IOException ex) {
                 System.err.println(ex);
@@ -63,19 +59,19 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
     private TextArea textArea;
     private CAHGame game;
     private Player player;
-    private Map lobbies;
     private Lobby lobby;
-    int playerNo;
-    int gameState;
-    Random rng;
+    private int playerNo;
+    private int gameState;
+    private int czar;
+    private Random rng;
     
-    public HandleAPlayer(Socket socket, TextArea area, Map lobbies, int playerNo){
+    public HandleAPlayer(Socket socket, TextArea area, int playerNo){
+        this.player = new Player();
         this.socket = socket;
         this.textArea = area;
-        this.lobbies = lobbies;
         this.playerNo = playerNo;
         this.rng = new Random();
-        this.game = new CAHGame();
+        //this.game = new CAHGame();
         this.gameState = 1;
     }
     
@@ -100,7 +96,7 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                             int temp = rng.nextInt(game.getWhiteDeck().size());
                             WhiteCard card = game.getWhiteDeck().get(temp);
                             game.getWhiteDeck().remove(card);
-                            player.addToHand(card);
+                            player.addToHand(card.getText());
                         }
                         Platform.runLater( () -> {
                             textArea.appendText("Client " + playerNo + " drew " + draws + " cards" + '\n');
@@ -128,11 +124,12 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                         String card = inputFromClient.readLine();
                         game.playCard(card, player.getID());
                         new Thread(()->{
-                            game.waitForReview();
+                            game.waitForChoice();
+                            System.out.println("WHY WONT THIS THREAD RUN");
+                            Platform.runLater( () -> {
+                                textArea.appendText("Client " + playerNo + " has played a white card" + '\n');
+                            });
                         }).start();
-                        Platform.runLater( () -> {
-                            textArea.appendText("Client " + playerNo + " has played a white card" + '\n');
-                        });
                         break;
                     case(PICK_WHITE):
                         String winner = inputFromClient.readLine();
@@ -140,14 +137,22 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                         game.getPlayer(win).addPoint();
                         if (game.getPlayer(win).getPoints() == 5){
                             gameState = 0;
+                        }                        
+                        int size = game.getCzar();
+                        if (size == game.getPlayersSize()){
+                            size = 1;
+                        }else{
+                            ++ size;
                         }
+                        game.setCzar(size);
+                        game.choose();
                         Platform.runLater( () -> {
                             textArea.appendText("The card czar " + playerNo + " has picked a white card" + '\n');
                         });
                         break;
                     case(GET_HAND):
-                        int total = game.getPlayer(player.getID()).getHand().size();
-                        ArrayList hand = game.getPlayer(player.getID()).getHand();
+                        ArrayList hand = lobby.getPlayer(player.getID()).getHand();
+                        int total = hand.size();
                         outputToClient.println(total);
                         for(int i = 0; i < total; ++ i){
                             outputToClient.println(hand.get(i).toString());
@@ -195,7 +200,23 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                         break;
                     case(SEND_LOBBY):
                         int lobbyNum = Integer.parseInt(inputFromClient.readLine());
-                        lobby = (Lobby) lobbies.get(lobbyNum);
+                        switch(lobbyNum){
+                            case(1):
+                                lobby = LOBBY_1;
+                                break;
+                            case(2):
+                                lobby = LOBBY_2;
+                                break;
+                            case(3):
+                                lobby = LOBBY_3;
+                                break;
+                            case(4):
+                                lobby = LOBBY_4;
+                                break;
+                            case(5):
+                                lobby = LOBBY_5;
+                                break;
+                        }
                         lobby.addPlayer(player);
                         lobby.addPlayerID(playerNo);
                         Platform.runLater( () -> {
@@ -212,33 +233,36 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                             textArea.appendText("Client " + playerNo + " has sent thier handle" + '\n');
                         });
                         break;
-                    case(READY_UP):
-                        int czar;
+                    case(READY_UP):                        
                         lobby.readyUp();
                         Platform.runLater( () -> {
                             textArea.appendText("Client " + playerNo + " has readied up" + '\n');
                         });
                         new Thread(()->{
-                            lobby.waitForReady();
-                            game.addPlayer(player.getID(), player);
-                        }).start();
-                        for(int i = 1; i <= 10; ++ i){
-                            if (game.getWhiteDeck().isEmpty()){
-                                game.setWhiteDeck(game.getDAO().getWhiteDeck());
+                            if ((lobby.getPlayersReady() != lobby.getPlayers().size()) || (lobby.getPlayersReady() < 3)){
+                                lobby.waitForReady();
+                            }    
+                            lobby.addToGame(player.getID(), player);
+                            this.game = lobby.getGame();
+                            int a = 0;
+                            for(int i = 1; i <= 10; ++ i){
+                                if (game.getWhiteDeck().isEmpty()){
+                                    game.setWhiteDeck(game.getDAO().getWhiteDeck());
+                                }
+                                a = rng.nextInt(game.getWhiteDeck().size());
+                                WhiteCard crd = game.getWhiteCard(a);
+                                player.addToHand(crd.getText());
+                                game.getWhiteDeck().remove(crd);
                             }
-                            int a = rng.nextInt(game.getWhiteDeck().size());
-                            WhiteCard crd = game.getWhiteDeck().get(a);
-                            game.getWhiteDeck().remove(crd);
-                            player.addToHand(crd);
-                        }
-                        czar = lobby.getCzar();
-                        game.setCzar(czar);
-                        outputToClient.println(lobby.getPlayerIds().get(czar));
-                        outputToClient.flush();
-                        Platform.runLater( () -> {
-                            textArea.appendText("Starting hands have been drawn" + '\n');
-                            textArea.appendText("The first card czar has been chosen" + '\n');
-                        });
+                            czar = lobby.getCzar();
+                            game.setCzar(czar);
+                            outputToClient.println(lobby.getPlayerIds().get(czar - 1));
+                            outputToClient.flush();
+                            Platform.runLater( () -> {
+                                textArea.appendText("Starting hands have been drawn" + '\n');
+                                textArea.appendText("The first card czar has been chosen" + '\n');
+                            });
+                        }).start();
                         break;
                     case(UNREADY):
                         lobby.removeReady();
@@ -247,33 +271,30 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                         });
                         break;
                     case(GET_CZAR):
-                        int size = game.getCzar();
-                        if (size + 1 == game.getPlayersSize()){
-                            size = 0;
-                        }else{
-                            ++ size;
-                        }  
-                        game.setCzar(size);
-                        int newCzar = (int) lobby.getPlayerIds().get(size);
-                        outputToClient.println(newCzar);
+                        int tzar = game.getCzar();
+                        System.out.println("tzar = " + tzar);
+                        outputToClient.println(tzar);
                         outputToClient.flush();
                         Platform.runLater( () -> {
-                            textArea.appendText("Client " + newCzar + " will be the new card czar" + '\n');
+                            textArea.appendText("Client " + tzar + " will be the new card czar" + '\n');
                         });
                         break;
                     case(GET_TO_JUDGE):
-                        int length = game.getPlayedCards().size();
-                        outputToClient.println(length);
-                        Map toJudge = game.getPlayedCards();
-                        Set keys = toJudge.keySet();
-                        Iterator i = keys.iterator();
-                        while(i.hasNext()){
-                            outputToClient.println(i.next().toString());
-                        }
-                        outputToClient.flush();
-                        Platform.runLater( () -> {
-                            textArea.appendText("Client " + playerNo + " has requested the list of played cards" + '\n');
-                        });
+                        new Thread(()->{
+                            game.waitForReview();
+                            int length = game.getPlayedCards().size();
+                            outputToClient.println(length);
+                            Map toJudge = game.getPlayedCards();
+                            Set keys = toJudge.keySet();
+                            Iterator i = keys.iterator();
+                            while(i.hasNext()){
+                                outputToClient.println(i.next().toString());
+                            }
+                            outputToClient.flush();
+                            Platform.runLater( () -> {
+                                textArea.appendText("Client " + playerNo + " has requested the list of played cards" + '\n');
+                            });
+                        });                        
                         break;
                 }
             }

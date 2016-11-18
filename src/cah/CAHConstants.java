@@ -1,5 +1,7 @@
 package cah;
 
+import cahserver.Lobby;
+
 public interface CAHConstants {
     public static int DRAW_WHITE = 1;
     public static int PLAY_WHITE = 2;
@@ -16,4 +18,9 @@ public interface CAHConstants {
     public static int GET_BLACK = 12;
     public static int GET_CZAR = 13;
     public static int GET_TO_JUDGE = 15;
+    public static Lobby LOBBY_1 = new Lobby(1);
+    public static Lobby LOBBY_2 = new Lobby(2);
+    public static Lobby LOBBY_3 = new Lobby(3);
+    public static Lobby LOBBY_4 = new Lobby(4);
+    public static Lobby LOBBY_5 = new Lobby(5);
 }

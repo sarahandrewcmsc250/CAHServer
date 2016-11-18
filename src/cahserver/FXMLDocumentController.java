@@ -60,7 +60,7 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
     private int playerNo;
     private int czar;
     private Random rng;
-    private static int POINTS_TO_WIN = 1;
+    private static int POINTS_TO_WIN = 3;
     
     public HandleAPlayer(Socket socket, TextArea area, int playerNo){
         this.player = new Player();

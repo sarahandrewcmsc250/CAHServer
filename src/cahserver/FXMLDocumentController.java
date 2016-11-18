@@ -9,11 +9,8 @@ import java.net.Socket;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.Iterator;
-import java.util.Map;
 import java.util.Random;
 import java.util.ResourceBundle;
-import java.util.Set;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -61,9 +58,9 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
     private Player player;
     private Lobby lobby;
     private int playerNo;
-    private int gameState;
     private int czar;
     private Random rng;
+    private static int POINTS_TO_WIN = 1;
     
     public HandleAPlayer(Socket socket, TextArea area, int playerNo){
         this.player = new Player();
@@ -71,8 +68,6 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
         this.textArea = area;
         this.playerNo = playerNo;
         this.rng = new Random();
-        //this.game = new CAHGame();
-        this.gameState = 1;
     }
     
     public void run(){
@@ -102,13 +97,11 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                             textArea.appendText("Client " + playerNo + " drew " + draws + " cards" + '\n');
                         });
                         break;
-                    case(DRAW_BLACK):
+                    case(DRAW_BLACK):                        
                         int temp = rng.nextInt(game.getBlackDeck().size());
                         BlackCard bCard = game.getBlackDeck().get(temp);
                         game.getBlackDeck().remove(bCard);
                         game.setCurrentBlackCard(bCard);
-                        outputToClient.println(bCard.getText());
-                        outputToClient.flush();
                         Platform.runLater( () -> {
                             textArea.appendText("New black card drawn" + '\n');
                         });
@@ -122,22 +115,26 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                         break;
                     case(PLAY_WHITE):
                         String card = inputFromClient.readLine();
-                        game.playCard(card, player.getID());
-                        new Thread(()->{
-                            game.waitForChoice();
-                            System.out.println("WHY WONT THIS THREAD RUN");
-                            Platform.runLater( () -> {
-                                textArea.appendText("Client " + playerNo + " has played a white card" + '\n');
-                            });
-                        }).start();
+                        game.playCard(player.getID(), card);
+                        game.waitForChoice();                      
+                        Platform.runLater( () -> {
+                            textArea.appendText("Client " + playerNo + " has played a white card" + '\n');
+                        });
                         break;
                     case(PICK_WHITE):
                         String winner = inputFromClient.readLine();
-                        int win = (int) (game.getPlayedCards().get(winner));
-                        game.getPlayer(win).addPoint();
-                        if (game.getPlayer(win).getPoints() == 5){
-                            gameState = 0;
-                        }                        
+                        ArrayList<PlayedCard> judge = game.getPlayedCards();
+                        for(int i = 0; i <judge.size(); ++ i){
+                            PlayedCard pCard = judge.get(i);
+                            String poss = pCard.getText();
+                            if(poss.equals(winner)){
+                                int win = pCard.getID();
+                                game.getPlayer(win).addPoint();
+                                if (game.getPlayer(win).getPoints() == POINTS_TO_WIN){
+                                    game.setGameState(0);
+                                }
+                            }
+                        }                                          
                         int size = game.getCzar();
                         if (size == game.getPlayersSize()){
                             size = 1;
@@ -145,10 +142,10 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                             ++ size;
                         }
                         game.setCzar(size);
-                        game.choose();
                         Platform.runLater( () -> {
                             textArea.appendText("The card czar " + playerNo + " has picked a white card" + '\n');
                         });
+                        game.choose();
                         break;
                     case(GET_HAND):
                         ArrayList hand = lobby.getPlayer(player.getID()).getHand();
@@ -170,22 +167,13 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                         });
                         break;
                     case(GET_ALL_SCORES):
-                        outputToClient.println(gameState);
-                        Map map = game.getPlayers();
-                        Set set = map.keySet();
-                        Iterator iter = set.iterator();
-                        while(iter.hasNext()){
-                            int id = (int) iter.next();
-                            Player user = (Player) map.get(id);
-                            outputToClient.println(user.getHandle());
-                            outputToClient.println(user.getPoints());
-                        }
-                        outputToClient.flush();
                         game.clearPlayedCards();
+                        outputToClient.println(game.getGameState());
+                        outputToClient.flush();
                         Platform.runLater( () -> {
                             textArea.appendText("Client " + playerNo + " has requested everyone's score" + '\n');
                             textArea.appendText("The list of played cards has been cleared" + '\n');
-                        });
+                        });                        
                         break;
                     case(GET_LOBBIES):
                         int count = 5;
@@ -272,7 +260,6 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                         break;
                     case(GET_CZAR):
                         int tzar = game.getCzar();
-                        System.out.println("tzar = " + tzar);
                         outputToClient.println(tzar);
                         outputToClient.flush();
                         Platform.runLater( () -> {
@@ -284,17 +271,16 @@ class HandleAPlayer implements Runnable, cah.CAHConstants{
                             game.waitForReview();
                             int length = game.getPlayedCards().size();
                             outputToClient.println(length);
-                            Map toJudge = game.getPlayedCards();
-                            Set keys = toJudge.keySet();
-                            Iterator i = keys.iterator();
-                            while(i.hasNext()){
-                                outputToClient.println(i.next().toString());
+                            ArrayList<PlayedCard> toJudge = game.getPlayedCards();
+                            for(int i = 0; i < toJudge.size(); ++ i){
+                                PlayedCard foo = toJudge.get(i);
+                                outputToClient.println(foo.getText());
                             }
                             outputToClient.flush();
                             Platform.runLater( () -> {
                                 textArea.appendText("Client " + playerNo + " has requested the list of played cards" + '\n');
                             });
-                        });                        
+                        }).start();                        
                         break;
                 }
             }

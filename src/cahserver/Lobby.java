@@ -16,6 +16,7 @@ public class Lobby {
     private int playersReady;
     private static Lock lock;
     private static Condition isReady;
+    private static Condition hasChosen;
     private Random rng;
     private CAHGame game;
     
@@ -26,6 +27,7 @@ public class Lobby {
         playersReady = 0;
         lock = new ReentrantLock();
         isReady = lock.newCondition();
+        hasChosen = lock.newCondition();
         rng = new Random();
         czar = 0;
         game = new CAHGame();
@@ -115,5 +117,23 @@ public class Lobby {
     
     public void addToGame(int number, Player player){
         game.addPlayer(number, player);
+    }
+    
+    public void waitForChoice(){
+        lock.lock();
+        try{
+            hasChosen.await();
+            System.out.println("waiting for choice");
+        }catch(InterruptedException e){
+            e.printStackTrace();
+        }finally{
+            lock.unlock();
+        }
+    }
+    
+    public void choose(){
+        lock.lock();
+        hasChosen.signal();
+        lock.unlock();
     }
 }

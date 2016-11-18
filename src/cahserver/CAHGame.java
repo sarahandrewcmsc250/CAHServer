@@ -10,7 +10,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class CAHGame {
     private ArrayList<WhiteCard> whiteDeck;
     private ArrayList<BlackCard> blackDeck;
-    private Map playedCards;
+    private ArrayList<PlayedCard> playedCards;
     private Map players;
     private int played;
     private int czar;
@@ -19,11 +19,12 @@ public class CAHGame {
     private static Condition hasPlayed;
     private static Condition hasChosen;
     private BlackCard currentBlackCard;
+    private int gameState;
     
     public CAHGame(){
         dao = new CAHDao();
-        playedCards = new HashMap<String, Integer>();
-        players = new HashMap<Integer, Player>();
+        playedCards = new ArrayList<>();
+        players = new HashMap<>();
         whiteDeck = dao.getWhiteDeck();
         blackDeck = dao.getBlackDeck();
         lock = new ReentrantLock();
@@ -31,6 +32,15 @@ public class CAHGame {
         hasChosen = lock.newCondition();
         played = 0;
         czar = 0;
+        gameState = 1;
+    }
+    
+    public int getGameState(){
+        return gameState;
+    }
+    
+    public void setGameState(int state){
+        this.gameState = state;
     }
     
     public ArrayList<WhiteCard> getWhiteDeck(){
@@ -65,18 +75,22 @@ public class CAHGame {
         return currentBlackCard;
     }
     
-    public void playCard(String card, int playerNo){
+    public int getPlayed(){
+        return played;
+    }
+    
+    public void playCard(int playerNo, String card){
         ++ played;
-        playedCards.put(card, playerNo);
+        PlayedCard pCard = new PlayedCard(playerNo, card);
+        playedCards.add(pCard);
         if(played == players.size() - 1){
             lock.lock();
             hasPlayed.signalAll();
             lock.unlock();
-        }                
+        }              
     }
     
     public void waitForReview(){
-        System.out.println(players.size());
         lock.lock();
         try{
             hasPlayed.await();            
@@ -90,7 +104,7 @@ public class CAHGame {
     
     public void choose(){
         lock.lock();
-        hasChosen.signal();
+        hasChosen.signalAll();
         lock.unlock();
     }
     
@@ -98,7 +112,6 @@ public class CAHGame {
         lock.lock();
         try{
             hasChosen.await();
-            System.out.println("waiting for choice");
         }catch(InterruptedException e){
             e.printStackTrace();
         }finally{
@@ -106,12 +119,12 @@ public class CAHGame {
         }
     }
        
-    public Map getPlayedCards(){
+    public ArrayList<PlayedCard> getPlayedCards(){
         return playedCards;
     }
     
     public void clearPlayedCards(){
-        playedCards = null;
+        playedCards.clear();
     }
     
     public void addPlayer(int number, Player player){
